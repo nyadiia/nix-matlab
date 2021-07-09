@@ -91,6 +91,10 @@
     packages.x86_64-linux.matlab-mex = pkgs.buildFHSUserEnv {
       name = "mex";
       inherit targetPkgs;
+      extraInstallCommands = ''
+        export C_INCLUDE_PATH=$INSTALL_DIR/extern/include:$C_INCLUDE_PATH
+        export CPLUS_INCLUDE_PATH=$INSTALL_DIR/extern/include:$CPLUS_INCLUDE_PATH
+      '';
       runScript = runScriptPrefix + ''
         exec $INSTALL_DIR/bin/glnxa64/mex "$@"
       '';
