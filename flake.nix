@@ -92,6 +92,9 @@
       name = "mex";
       inherit targetPkgs;
       extraInstallCommands = ''
+        # Add mex's header files to C/C++'s search path. Mex already
+        # knows where to look but editing tools like linters and
+        # completion might not.
         export C_INCLUDE_PATH=$INSTALL_DIR/extern/include:$C_INCLUDE_PATH
         export CPLUS_INCLUDE_PATH=$INSTALL_DIR/extern/include:$CPLUS_INCLUDE_PATH
       '';
