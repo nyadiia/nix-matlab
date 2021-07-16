@@ -7,7 +7,7 @@
     flake = false;
   };
 
-  outputs = { self, nixpkgs, flake-compat }: 
+  outputs = { self, nixpkgs, flake-compat }:
   let
     # We don't use flake-utils.lib.eachDefaultSystem since only x86_64-linux is
     # supported
@@ -88,8 +88,22 @@
         exec $INSTALL_DIR/bin/glnxa64/mlint "$@"
       '';
     };
+    packages.x86_64-linux.matlab-mex = pkgs.buildFHSUserEnv {
+      name = "mex";
+      inherit targetPkgs;
+      extraInstallCommands = ''
+        # Add mex's header files to C/C++'s search path. Mex already
+        # knows where to look but editing tools like linters and
+        # completion might not.
+        export C_INCLUDE_PATH=$INSTALL_DIR/extern/include:$C_INCLUDE_PATH
+        export CPLUS_INCLUDE_PATH=$INSTALL_DIR/extern/include:$CPLUS_INCLUDE_PATH
+      '';
+      runScript = runScriptPrefix + ''
+        exec $INSTALL_DIR/bin/glnxa64/mex "$@"
+      '';
+    };
     overlay = final: prev: {
-      inherit (self.packages.x86_64-linux) matlab matlab-shell matlab-mlint;
+      inherit (self.packages.x86_64-linux) matlab matlab-shell matlab-mlint matlab-mex;
     };
     devShell.x86_64-linux = pkgs.mkShell {
       buildInputs = (targetPkgs pkgs) ++ [
