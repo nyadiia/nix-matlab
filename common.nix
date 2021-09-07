@@ -39,6 +39,10 @@ pkgs:
   udev
   jre
   ncurses # Needed for CLI
+
+  # Keyboard input may not work in simulink otherwise
+  libxkbcommon
+  xkeyboard_config
 ]) ++ (with pkgs.xorg; [
   libSM
   libX11
