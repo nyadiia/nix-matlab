@@ -37,11 +37,23 @@
       exec = "@out@/bin/matlab -desktop %F";
       icon = "matlab";
       # Most of the following are copied from octave's desktop launcher
-      categories = "Utility;TextEditor;Development;IDE;";
-      mimeType = "text/x-octave;text/x-matlab;";
-      extraEntries = ''
-        Keywords=science;math;matrix;numerical computation;plotting;
-      '';
+      categories = [
+        "Utility"
+        "TextEditor"
+        "Development"
+        "IDE"
+      ];
+      mimeTypes = [
+        "text/x-octave"
+        "text/x-matlab"
+      ];
+      keywords = [
+        "science"
+        "math"
+        "matrix"
+        "numerical computation"
+        "plotting"
+      ];
     };
   in {
 
