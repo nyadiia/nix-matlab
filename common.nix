@@ -29,6 +29,8 @@ pkgs:
   procps
   unzip
   zlib
+  # For uname, needed in mexext
+  util-linux.bin
 
   # These packages are needed since 2021b version
   gnome2.gtk
