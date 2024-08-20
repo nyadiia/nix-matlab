@@ -1,7 +1,12 @@
 = Matlab for Nix users
 :source-highlighter: rouge
 
-This repo is a collection of files that should help Nix and NixOS users install Matlab imperatively.
+This repo is a collection of files that should help Nix and NixOS users install
+Matlab imperatively. The `matlab*` derivations provided by this repo use
+https://nixos.org/manual/nixpkgs/unstable/#sec-fhs-environments[Nixpkgs'
+`buildFHSEnv`] to run any executable provided by matlab in an environment that
+imitates a system with FHS. Please read the description of `buildFHSEnv` to
+understand how it works.
 
 == Install
 
