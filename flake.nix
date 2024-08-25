@@ -115,9 +115,9 @@
         install -Dm644 ${desktopItem}/share/applications/matlab.desktop $out/share/applications/matlab.desktop
         substituteInPlace $out/share/applications/matlab.desktop \
           --replace "@out@" ${placeholder "out"}
-        install -Dm644 ${./icons/hicolor/256x256/matlab.png} $out/share/icons/hicolor/256x256/matlab.png
-        install -Dm644 ${./icons/hicolor/512x512/matlab.png} $out/share/icons/hicolor/512x512/matlab.png
-        install -Dm644 ${./icons/hicolor/64x64/matlab.png} $out/share/icons/hicolor/64x64/matlab.png
+        install -Dm644 ${./icons/hicolor/256x256/matlab.png} $out/share/icons/hicolor/256x256/apps/matlab.png
+        install -Dm644 ${./icons/hicolor/512x512/matlab.png} $out/share/icons/hicolor/512x512/apps/matlab.png
+        install -Dm644 ${./icons/hicolor/64x64/matlab.png} $out/share/icons/hicolor/64x64/apps/matlab.png
       '';
       runScript = pkgs.writeScript "matlab-runner" ((runScriptPrefix {}) + ''
         exec $INSTALL_DIR/bin/matlab "$@"
