@@ -127,130 +127,143 @@
     in
     {
 
-      packages.x86_64-linux.matlab = pkgs.buildFHSUserEnv {
-        name = "matlab";
-        inherit targetPkgs;
-        extraInstallCommands = ''
-          install -Dm644 ${desktopItem}/share/applications/matlab.desktop $out/share/applications/matlab.desktop
-          substituteInPlace $out/share/applications/matlab.desktop \
-            --replace "@out@" ${placeholder "out"}
-          install -Dm644 ${./icons/hicolor/256x256/matlab.png} $out/share/icons/hicolor/256x256/apps/matlab.png
-          install -Dm644 ${./icons/hicolor/512x512/matlab.png} $out/share/icons/hicolor/512x512/apps/matlab.png
-          install -Dm644 ${./icons/hicolor/64x64/matlab.png} $out/share/icons/hicolor/64x64/apps/matlab.png
-        '';
-        runScript = pkgs.writeScript "matlab-runner" (
-          (runScriptPrefix { })
-          + ''
-            exec env LD_PRELOAD=/lib/libstdc++.so LD_LIBRARY_PATH=/usr/lib/xorg/modules/dri/ $INSTALL_DIR/bin/matlab "$@"
-          ''
-        );
-        meta = metaCommon // {
-          description = "Matlab itself - the GUI launcher";
-        };
-      };
-      packages.x86_64-linux.matlab-shell = pkgs.buildFHSUserEnv {
-        name = "matlab-shell";
-        inherit targetPkgs;
-        runScript = pkgs.writeScript "matlab-shell-runner" (
-          (runScriptPrefix {
-            # If the user hasn't setup a ~/.config/matlab/nix.sh file yet, don't
-            # yell at them that it's missing
-            errorOut = false;
-          })
-          + ''
-            cat <<EOF
-            ============================
-            welcome to nix-matlab shell!
+      packages.x86_64-linux = {
+        matlab = pkgs.callPackage (
+          {
+            opengl ? true,
+          }:
+          pkgs.buildFHSUserEnv {
+            name = "matlab";
+            inherit targetPkgs;
+            extraInstallCommands = ''
+              install -Dm644 ${desktopItem}/share/applications/matlab.desktop $out/share/applications/matlab.desktop
+              substituteInPlace $out/share/applications/matlab.desktop \
+                --replace "@out@" ${placeholder "out"}
+              install -Dm644 ${./icons/hicolor/256x256/matlab.png} $out/share/icons/hicolor/256x256/apps/matlab.png
+              install -Dm644 ${./icons/hicolor/512x512/matlab.png} $out/share/icons/hicolor/512x512/apps/matlab.png
+              install -Dm644 ${./icons/hicolor/64x64/matlab.png} $out/share/icons/hicolor/64x64/apps/matlab.png
+            '';
+            runScript = pkgs.writeScript "matlab-runner" (
+              (runScriptPrefix { })
+              + (
+                if opengl then
+                  ''
+                    exec env LD_PRELOAD=/lib/libstdc++.so LD_LIBRARY_PATH=/usr/lib/xorg/modules/dri/ $INSTALL_DIR/bin/matlab "$@"
+                  ''
+                else
+                  ''exec $INSTALL_DIR/bin/matlab "$@"''
+              )
+            );
+            meta = metaCommon // {
+              description = "Matlab itself - the GUI launcher";
+            };
+          }
+        ) { };
+        matlab-ngl = self.packages.x86_64-linux.matlab.override { opengl = false; };
+        matlab-shell = pkgs.buildFHSUserEnv {
+          name = "matlab-shell";
+          inherit targetPkgs;
+          runScript = pkgs.writeScript "matlab-shell-runner" (
+            (runScriptPrefix {
+              # If the user hasn't setup a ~/.config/matlab/nix.sh file yet, don't
+              # yell at them that it's missing
+              errorOut = false;
+            })
+            + ''
+              cat <<EOF
+              ============================
+              welcome to nix-matlab shell!
 
-            To install matlab:
-            ${nixpkgs.lib.strings.escape [
-              "`"
-              "'"
-              "\""
-              "$"
-            ] (builtins.readFile ./install.adoc)}
+              To install matlab:
+              ${nixpkgs.lib.strings.escape [
+                "`"
+                "'"
+                "\""
+                "$"
+              ] (builtins.readFile ./install.adoc)}
 
-            4. Finish the installation, and exit the shell (with \`exit\`).
-            5. Follow the rest of the instructions in the README to make matlab
-               executable available anywhere on your system.
-            ============================
-            EOF
-            exec bash
-          ''
-        );
-        meta = metaCommon // {
-          description = "A bash shell from which you can install matlab or launch matlab from CLI";
+              4. Finish the installation, and exit the shell (with \`exit\`).
+              5. Follow the rest of the instructions in the README to make matlab
+                 executable available anywhere on your system.
+              ============================
+              EOF
+              exec bash
+            ''
+          );
+          meta = metaCommon // {
+            description = "A bash shell from which you can install matlab or launch matlab from CLI";
+          };
         };
-      };
-      # This could have been defined as an overlay for the python3.pkgs attribute
-      # set, defined with `packageOverrides`, but this won't bring any benefit
-      # because in order to use the matlab engine, one needs to be inside an
-      # FHSUser environment anyway.
-      packages.x86_64-linux.matlab-python-package = pkgs.python3.pkgs.buildPythonPackage rec {
-        # No version - can be used with every matlab version (R2021b or R2021a etc)
-        name = "matlab-python-package";
-        unpackCmd = ''
-          cp -r ${src}/ matlab-python-src
-          sourceRoot=$PWD/matlab-python-src
-        '';
-        patches = [
-          # Matlab designed this python package to be installed imperatively, and
-          # on an impure system - running `python setup.py install` creates an
-          # `_arch.txt` file in /usr/local/lib/python3.9/site-packages/matlab (or
-          # alike), which tells the `__init__.py` where matlab is installed and
-          # where do some .so files reside. This doesn't suit a nix installation,
-          # and the best way IMO to work around this is to patch the __init__.py
-          # file to use the $MATLAB_INSTALL_DIR to find these shared objects and
-          # not read any _arch.txt file.
-          ./python-no_arch.txt-file.patch
-        ];
-        src = generatePythonSrc "2022a";
-        meta = metaCommon // {
-          homepage = "https://www.mathworks.com/help/matlab/matlab-engine-for-python.html";
-          description = "Matlab engine for python - Nix package, slightly patched for a Nix installation";
+        # This could have been defined as an overlay for the python3.pkgs attribute
+        # set, defined with `packageOverrides`, but this won't bring any benefit
+        # because in order to use the matlab engine, one needs to be inside an
+        # FHSUser environment anyway.
+        matlab-python-package = pkgs.python3.pkgs.buildPythonPackage rec {
+          # No version - can be used with every matlab version (R2021b or R2021a etc)
+          name = "matlab-python-package";
+          unpackCmd = ''
+            cp -r ${src}/ matlab-python-src
+            sourceRoot=$PWD/matlab-python-src
+          '';
+          patches = [
+            # Matlab designed this python package to be installed imperatively, and
+            # on an impure system - running `python setup.py install` creates an
+            # `_arch.txt` file in /usr/local/lib/python3.9/site-packages/matlab (or
+            # alike), which tells the `__init__.py` where matlab is installed and
+            # where do some .so files reside. This doesn't suit a nix installation,
+            # and the best way IMO to work around this is to patch the __init__.py
+            # file to use the $MATLAB_INSTALL_DIR to find these shared objects and
+            # not read any _arch.txt file.
+            ./python-no_arch.txt-file.patch
+          ];
+          src = generatePythonSrc "2022a";
+          meta = metaCommon // {
+            homepage = "https://www.mathworks.com/help/matlab/matlab-engine-for-python.html";
+            description = "Matlab engine for python - Nix package, slightly patched for a Nix installation";
+          };
         };
-      };
-      packages.x86_64-linux.matlab-python-shell = pkgs.buildFHSUserEnv {
-        name = "matlab-python-shell";
-        inherit targetPkgs;
-        runScript = pkgs.writeScript "matlab-python-shell-runner" (
-          shellHooksCommon
-          + ''
-            export PYTHONPATH=${self.packages.x86_64-linux.matlab-python-package}/${pkgs.python3.sitePackages}
-            exec python "$@"
-          ''
-        );
-        meta = metaCommon // {
-          homepage = "https://www.mathworks.com/help/matlab/matlab-engine-for-python.html";
-          description = "A python shell from which you can use matlab's python engine";
+        matlab-python-shell = pkgs.buildFHSUserEnv {
+          name = "matlab-python-shell";
+          inherit targetPkgs;
+          runScript = pkgs.writeScript "matlab-python-shell-runner" (
+            shellHooksCommon
+            + ''
+              export PYTHONPATH=${self.packages.x86_64-linux.matlab-python-package}/${pkgs.python3.sitePackages}
+              exec python "$@"
+            ''
+          );
+          meta = metaCommon // {
+            homepage = "https://www.mathworks.com/help/matlab/matlab-engine-for-python.html";
+            description = "A python shell from which you can use matlab's python engine";
+          };
         };
-      };
-      packages.x86_64-linux.matlab-mlint = pkgs.buildFHSUserEnv {
-        name = "mlint";
-        inherit targetPkgs;
-        runScript = pkgs.writeScript "matlab-mlint-runner" (
-          (runScriptPrefix { })
-          + ''
-            exec $INSTALL_DIR/bin/glnxa64/mlint "$@"
-          ''
-        );
-        meta = metaCommon // {
-          homepage = "https://www.mathworks.com/help/matlab/ref/mlint.html";
-          description = "Check MATLAB code files for possible problems";
+        matlab-mlint = pkgs.buildFHSUserEnv {
+          name = "mlint";
+          inherit targetPkgs;
+          runScript = pkgs.writeScript "matlab-mlint-runner" (
+            (runScriptPrefix { })
+            + ''
+              exec $INSTALL_DIR/bin/glnxa64/mlint "$@"
+            ''
+          );
+          meta = metaCommon // {
+            homepage = "https://www.mathworks.com/help/matlab/ref/mlint.html";
+            description = "Check MATLAB code files for possible problems";
+          };
         };
-      };
-      packages.x86_64-linux.matlab-mex = pkgs.buildFHSUserEnv {
-        name = "mex";
-        inherit targetPkgs;
-        runScript = pkgs.writeScript "matlab-mex-runner" (
-          (runScriptPrefix { })
-          + ''
-            exec $INSTALL_DIR/bin/glnxa64/mex "$@"
-          ''
-        );
-        meta = metaCommon // {
-          homepage = "https://www.mathworks.com/help/matlab/ref/mex.html";
-          description = "Build MEX function or engine application";
+        matlab-mex = pkgs.buildFHSUserEnv {
+          name = "mex";
+          inherit targetPkgs;
+          runScript = pkgs.writeScript "matlab-mex-runner" (
+            (runScriptPrefix { })
+            + ''
+              exec $INSTALL_DIR/bin/glnxa64/mex "$@"
+            ''
+          );
+          meta = metaCommon // {
+            homepage = "https://www.mathworks.com/help/matlab/ref/mex.html";
+            description = "Build MEX function or engine application";
+          };
         };
       };
       overlay = final: prev: {
