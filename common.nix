@@ -1,6 +1,7 @@
-/* This list of dependencies is based on the official Mathworks dockerfile for
-   R2020a, available at
-     https://github.com/mathworks-ref-arch/container-images
+/*
+  This list of dependencies is based on the official Mathworks dockerfile for
+  R2020a, available at
+    https://github.com/mathworks-ref-arch/container-images
 */
 pkgs:
 
@@ -55,8 +56,8 @@ pkgs:
   # Needed since 2022b
   libuuid
   libxcrypt
-
-]) ++ (with pkgs.xorg; [
+])
+++ (with pkgs.xorg; [
   libSM
   libX11
   libxcb
